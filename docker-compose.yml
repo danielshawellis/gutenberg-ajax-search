@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  # Database
+  db:
+    image: mysql:latest
+    command: --default-authentication-plugin=mysql_native_password # This command allows connections from the "mysql" NPM package in the tests: https://stackoverflow.com/a/56661091/14933811
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+  # Wordpress
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    ports:
+      - '80:80'
+    volumes:
+      - "wp:/var/www/html:rw"
+      - ".:/var/www/html/wp-content/plugins/gutenberg-ajax-search:rw"
+    environment: # These variables are set in the project's top-level .env files and injected via dotenv-cli: https://www.npmjs.com/package/dotenv-cli and Docker Compose substitution: https://docs.docker.com/compose/environment-variables/#substitute-environment-variables-in-compose-files
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DEBUG: "true"
+  # WP CLI
+  wpcli: 
+    depends_on:
+      - db
+      - wordpress
+    image: wordpress:cli
+    user: xfs
+    volumes:
+      - "wp:/var/www/html:rw"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+volumes:
+  db_data:
+  wp:
